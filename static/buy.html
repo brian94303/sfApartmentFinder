@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SF Apartment Finder - Buy</title>
+  <style>
+    :root {
+      --bg: #F2F3F7;
+      --card: #FFFFFF;
+      --border: #E5E7EB;
+      --text: #1D1D1F;
+      --muted: #6B7280;
+      --primary: #1A5F2A;
+      --green: #22C55E;
+      --green-dark: #15803D;
+      --orange: #F59E0B;
+      --orange-dark: #D97706;
+      --danger: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 10;
+    }
+
+    .header h1 { font-size: 18px; font-weight: 800; }
+    .header-info { font-size: 12px; opacity: 0.85; margin-top: 3px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .header-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .header-btn:hover { background: rgba(255,255,255,0.25); }
+
+    .main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 390px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .sidebar-header h2 { font-size: 15px; font-weight: 750; }
+    .sidebar-count { font-size: 12px; color: var(--muted); font-weight: 650; }
+    #data-source { font-size: 10px; color: var(--green-dark); font-weight: 700; margin-top: 2px; text-align: right; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric {
+      padding: 10px 12px;
+      border-right: 1px solid var(--border);
+    }
+
+    .metric:last-child { border-right: none; }
+    .metric-label { font-size: 10px; color: var(--muted); font-weight: 750; text-transform: uppercase; }
+    .metric-value { margin-top: 3px; font-size: 15px; font-weight: 850; white-space: nowrap; }
+
+    .filters {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .filter-label { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 38px; }
+
+    .filter-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--green); color: var(--text); }
+    .filter-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+
+    .sort-select {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 650;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .listings { flex: 1; overflow-y: auto; }
+
+    .listing-card {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      gap: 12px;
+    }
+
+    .listing-card:hover { background: #F8FAFB; }
+    .listing-card.active { background: #EBF5EB; border-left: 3px solid var(--green); }
+
+    .listing-marker {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 850;
+      color: #fff;
+      flex-shrink: 0;
+      margin-top: 2px;
+      background: var(--green);
+    }
+
+    .listing-info { flex: 1; min-width: 0; }
+    .listing-price-link {
+      font-size: 18px;
+      font-weight: 850;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .listing-price-link:hover { color: var(--primary); text-decoration: underline; }
+    .listing-address { font-size: 13px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+    .listing-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; font-size: 12px; color: var(--muted); }
+    .listing-meta span { display: flex; align-items: center; gap: 3px; }
+    .listing-links { display: flex; gap: 10px; margin-top: 8px; }
+    .listing-links a { color: var(--primary); text-decoration: none; font-size: 12px; font-weight: 800; }
+    .listing-links a:hover { text-decoration: underline; }
+    .listing-img { width: 78px; height: 62px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: #E5E7EB; }
+
+    .map-container { flex: 1; position: relative; min-width: 0; }
+    #map { width: 100%; height: 100%; }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; font-weight: 700; color: var(--text); }
+    .loading-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .error-box {
+      margin: 16px;
+      padding: 16px;
+      background: #FEE2E2;
+      border: 1px solid #FECACA;
+      border-radius: 8px;
+      color: #991B1B;
+      font-size: 13px;
+    }
+
+    .error-box strong { display: block; margin-bottom: 4px; }
+    .empty-state { padding: 40px 20px; text-align: center; color: var(--muted); }
+    .empty-state p { font-size: 14px; margin-top: 8px; }
+
+    .info-window {
+      font-family: inherit;
+      max-width: 280px;
+      background: #1D1D1F;
+      color: #fff;
+      padding: 14px;
+      border-radius: 10px;
+      margin: -8px -12px;
+    }
+
+    .info-window h3 { font-size: 14px; font-weight: 800; margin-bottom: 4px; color: #fff; }
+    .info-window p { font-size: 12px; color: #D1D5DB; margin: 3px 0; }
+    .info-window a {
+      display: inline-block;
+      margin-top: 8px;
+      background: var(--green);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+      .header { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .main { flex-direction: column-reverse; }
+      .sidebar { width: 100%; height: 46vh; border-right: none; border-top: 1px solid var(--border); }
+      .map-container { height: 54vh; }
+      .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>SF Apartment Finder - Buy</h1>
+      <div class="header-info">For-sale 1-2 bedroom homes within 1.5mi of OpenAI Office</div>
+    </div>
+    <div class="header-actions">
+      <a href="/" class="header-btn">Rent</a>
+      <button class="header-btn" type="button" onclick="loadListings()">Refresh</button>
+      <button class="header-btn" type="button" onclick="clearCache()">Clear Cache</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Buy Matches</h2>
+        <div>
+          <span class="sidebar-count" id="sidebar-count">Loading...</span>
+          <div id="data-source"></div>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="metric">
+          <div class="metric-label">Max Price</div>
+          <div class="metric-value" id="max-price">...</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Bedrooms</div>
+          <div class="metric-value" id="bedrooms">...</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Radius</div>
+          <div class="metric-value" id="radius">...</div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-row">
+          <span class="filter-label">Beds</span>
+          <button class="filter-btn active" data-beds="all" type="button" onclick="setBedFilter('all')">All</button>
+          <button class="filter-btn" data-beds="1" type="button" onclick="setBedFilter(1)">1 Bed</button>
+          <button class="filter-btn" data-beds="2" type="button" onclick="setBedFilter(2)">2 Bed</button>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">Sort</span>
+          <select class="sort-select" id="sort-select" onchange="setSortOrder(this.value)">
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="distance">Distance: Nearest</option>
+            <option value="sqft_desc">Sqft: Largest</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="listings" id="listings"></div>
+    </aside>
+
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Finding buy listings...</div>
+        <div class="loading-sub">Searching near OpenAI Office</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let map, infoWindow, buildingMarker;
+    let markers = [];
+    let listings = [];
+    let activeListingId = null;
+    let currentBedFilter = "all";
+    let currentSort = "price_asc";
+    let OPENAI_OFFICE = { lat: 0, lng: 0 };
+
+    function money(value) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(value);
+    }
+
+    function compactMoney(value) {
+      if (!Number.isFinite(value)) return "...";
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+      return `$${Math.round(value / 1000)}k`;
+    }
+
+    async function init() {
+      const config = await fetch("/api/config").then((r) => r.json());
+      OPENAI_OFFICE = config.openaiOffice;
+
+      if (config.mapsApiKey) {
+        loadGoogleMaps(config.mapsApiKey, () => {
+          initMap(config.openaiOffice);
+          loadListings();
+        });
+      } else {
+        document.getElementById("map").innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#e5e7eb;color:#6b7280;font-size:14px;text-align:center;padding:20px;">Google Maps API key not configured.<br>Add MAPS_API_KEY to your .env file.<br>Listings will still load in the sidebar.</div>';
+        document.getElementById("loading").style.display = "none";
+        loadListings();
+      }
+    }
+
+    function loadGoogleMaps(apiKey, callback) {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=__gmapsReady`;
+      script.async = true;
+      script.defer = true;
+      window.__gmapsReady = callback;
+      document.head.appendChild(script);
+    }
+
+    function initMap(center) {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: center.lat, lng: center.lng },
+        zoom: 14,
+        mapTypeControl: false,
+        streetViewControl: false,
+        styles: [
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "simplified" }] },
+        ],
+      });
+
+      infoWindow = new google.maps.InfoWindow();
+      buildingMarker = new google.maps.Marker({
+        position: { lat: center.lat, lng: center.lng },
+        map,
+        title: "OpenAI Office",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: "#1A5F2A",
+          fillOpacity: 1,
+          strokeColor: "#fff",
+          strokeWeight: 3,
+        },
+        zIndex: 1000,
+      });
+
+      new google.maps.Circle({
+        map,
+        center: { lat: center.lat, lng: center.lng },
+        radius: 2414,
+        fillColor: "#22C55E",
+        fillOpacity: 0.06,
+        strokeColor: "#22C55E",
+        strokeOpacity: 0.3,
+        strokeWeight: 2,
+      });
+
+      google.maps.event.addListener(buildingMarker, "click", () => {
+        infoWindow.setContent(`
+          <div class="info-window">
+            <h3>OpenAI Office</h3>
+            <p>Reference point for buy search</p>
+            <p>1.5 mile radius</p>
+          </div>
+        `);
+        infoWindow.open(map, buildingMarker);
+      });
+
+      document.getElementById("loading").style.display = "none";
+    }
+
+    function directionsUrl(listing) {
+      return `https://www.google.com/maps/dir/${OPENAI_OFFICE.lat},${OPENAI_OFFICE.lng}/${listing.lat},${listing.lng}/@${listing.lat},${listing.lng},15z/data=!3m1!4b1!4m2!4m1!3e2`;
+    }
+
+    async function loadListings() {
+      const listingsEl = document.getElementById("listings");
+      const countEl = document.getElementById("sidebar-count");
+      const loadingEl = document.getElementById("loading");
+
+      if (loadingEl) loadingEl.style.display = "flex";
+      countEl.textContent = "Loading...";
+      listingsEl.innerHTML = "";
+
+      try {
+        const data = await fetch("/api/sale-listings").then((r) => r.json());
+
+        if (data.error) {
+          listingsEl.innerHTML = `<div class="error-box"><strong>Error</strong>${data.error}</div>`;
+          countEl.textContent = "Error";
+          if (loadingEl) loadingEl.style.display = "none";
+          return;
+        }
+
+        listings = data.listings || [];
+        document.getElementById("max-price").textContent = compactMoney(data.filters.maxPrice);
+        document.getElementById("bedrooms").textContent = data.filters.bedrooms.join("-") + " bed";
+        document.getElementById("radius").textContent = `${data.filters.radiusMiles} mi`;
+
+        const sourceEl = document.getElementById("data-source");
+        sourceEl.textContent = data.source === "redfin_rapidapi" ? "Live from Redfin" : data.source;
+        sourceEl.style.color = data.source === "redfin_rapidapi" ? "var(--green-dark)" : "var(--orange-dark)";
+
+        if (!listings.length) {
+          listingsEl.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size:40px;">No matches</div>
+              <p>No buy listings found matching the current criteria.</p>
+            </div>`;
+          countEl.textContent = "0 homes";
+          if (loadingEl) loadingEl.style.display = "none";
+          return;
+        }
+
+        applyFilters();
+      } catch (err) {
+        listingsEl.innerHTML = `<div class="error-box"><strong>Network Error</strong>${err.message}</div>`;
+        countEl.textContent = "Error";
+      }
+
+      if (loadingEl) loadingEl.style.display = "none";
+    }
+
+    function renderListings(items) {
+      const el = document.getElementById("listings");
+      el.innerHTML = items.map((l) => `
+        <div class="listing-card" data-id="${l.id}">
+          <div class="listing-marker">${l.bedrooms}</div>
+          <div class="listing-info">
+            <a href="${l.url}" target="_blank" class="listing-price-link" onclick="event.stopPropagation();">${money(l.price)}</a>
+            <div class="listing-address" title="${l.address}">${l.address}</div>
+            <div class="listing-meta">
+              <span>${l.bedrooms} bed</span>
+              ${l.bathrooms ? `<span>${l.bathrooms} bath</span>` : ""}
+              ${l.sqft ? `<span>${l.sqft.toLocaleString()} sqft</span>` : ""}
+              <span>${l.distance_miles} mi</span>
+            </div>
+            <div class="listing-links">
+              <a href="${l.url}" target="_blank" onclick="event.stopPropagation();">Redfin</a>
+              <a href="${directionsUrl(l)}" target="_blank" onclick="event.stopPropagation();">Walking Directions</a>
+            </div>
+          </div>
+          ${l.image ? `<img class="listing-img" src="${l.image}" alt="" onerror="this.style.display='none'">` : ""}
+        </div>
+      `).join("");
+
+      el.querySelectorAll(".listing-card").forEach((card) => {
+        card.addEventListener("click", (e) => {
+          if (e.target.tagName === "A") return;
+          selectListing(card.dataset.id);
+        });
+      });
+    }
+
+    function renderMarkers(items) {
+      if (!map || !window.google) return;
+
+      markers.forEach((m) => m.setMap(null));
+      markers = [];
+
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend({ lat: OPENAI_OFFICE.lat, lng: OPENAI_OFFICE.lng });
+
+      items.forEach((l) => {
+        const marker = new google.maps.Marker({
+          position: { lat: l.lat, lng: l.lng },
+          map,
+          title: l.address,
+          label: {
+            text: compactMoney(l.price),
+            color: "#fff",
+            fontWeight: "800",
+            fontSize: "10px",
+          },
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 22,
+            fillColor: "#22C55E",
+            fillOpacity: 1,
+            strokeColor: "#fff",
+            strokeWeight: 2,
+          },
+          zIndex: 100,
+        });
+
+        marker.listingId = l.id;
+        google.maps.event.addListener(marker, "click", () => {
+          showInfoWindow(marker, l);
+          highlightCard(l.id);
+        });
+
+        markers.push(marker);
+        bounds.extend({ lat: l.lat, lng: l.lng });
+      });
+
+      map.fitBounds(bounds, { padding: 60 });
+    }
+
+    function showInfoWindow(marker, listing) {
+      infoWindow.setContent(`
+        <div class="info-window">
+          <h3><a href="${listing.url}" target="_blank" style="color:#fff;text-decoration:none;">${money(listing.price)}</a> &bull; ${listing.bedrooms} bed</h3>
+          <p>${listing.address}</p>
+          <p>${listing.distance_miles} mi from OpenAI Office</p>
+          ${listing.sqft ? `<p>${listing.sqft.toLocaleString()} sqft</p>` : ""}
+          ${listing.neighborhood ? `<p>${listing.neighborhood}</p>` : ""}
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <a href="${listing.url}" target="_blank">View on Redfin</a>
+            <a href="${directionsUrl(listing)}" target="_blank" style="background:var(--orange);">Directions</a>
+          </div>
+        </div>
+      `);
+      infoWindow.open(map, marker);
+    }
+
+    function selectListing(id) {
+      const listing = listings.find((l) => String(l.id) === String(id));
+      if (!listing) return;
+
+      highlightCard(id);
+
+      if (map) {
+        const marker = markers.find((m) => String(m.listingId) === String(id));
+        if (marker) {
+          map.panTo(marker.getPosition());
+          map.setZoom(16);
+          showInfoWindow(marker, listing);
+        }
+      }
+    }
+
+    function highlightCard(id) {
+      document.querySelectorAll(".listing-card").forEach((c) => c.classList.remove("active"));
+      const card = document.querySelector(`.listing-card[data-id="${id}"]`);
+      if (card) {
+        card.classList.add("active");
+        card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      activeListingId = id;
+    }
+
+    function setBedFilter(beds) {
+      currentBedFilter = beds;
+      document.querySelectorAll(".filter-btn").forEach((b) => {
+        b.classList.toggle("active", String(b.dataset.beds) === String(beds));
+      });
+      applyFilters();
+    }
+
+    function setSortOrder(sort) {
+      currentSort = sort;
+      applyFilters();
+    }
+
+    function applyFilters() {
+      let filtered = [...listings];
+
+      if (currentBedFilter !== "all") {
+        filtered = filtered.filter((l) => l.bedrooms === currentBedFilter);
+      }
+
+      switch (currentSort) {
+        case "price_desc":
+          filtered.sort((a, b) => b.price - a.price);
+          break;
+        case "distance":
+          filtered.sort((a, b) => a.distance_miles - b.distance_miles);
+          break;
+        case "sqft_desc":
+          filtered.sort((a, b) => (b.sqft || 0) - (a.sqft || 0));
+          break;
+        default:
+          filtered.sort((a, b) => a.price - b.price);
+      }
+
+      document.getElementById("sidebar-count").textContent = `${filtered.length} of ${listings.length} homes`;
+      renderListings(filtered);
+      renderMarkers(filtered);
+    }
+
+    async function clearCache() {
+      await fetch("/api/cache/clear");
+      loadListings();
+    }
+
+    init();
+  </script>
+</body>
+</html>
